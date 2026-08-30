@@ -1,7 +1,7 @@
 {
 	"meta": {
 		"title": "YIF4NG",
-		"description": "一方 的个人博客，记录生活、探索、笔记。",
+		"description": "一方 的个人博客，记录前端开发、探索、笔记。前端 UI 更新代码仓库。",
 		"username": "一方"
 	},
 	"theme": {
@@ -44,9 +44,9 @@
 	"socialButtons": [
 		{
 			"id": "github",
-			"type": "github",
-			"value": "https://github.com/YIF4NG",
-			"label": "Github",
+			"type": "x",
+			"value": "https://x.com/wu_inari",
+			"label": "X",
 			"order": 3
 		},
 		{
