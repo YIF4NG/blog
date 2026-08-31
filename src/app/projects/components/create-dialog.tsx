@@ -49,7 +49,12 @@ export default function CreateDialog({ project, onClose, onSave }: CreateDialogP
 	}, [project])
 
 	const handleImageSubmit = (image: ImageItem) => {
-		setImageItem(image)
+		setImageItem(current => {
+			if (image.type === 'url' && current?.type === 'file' && image.url === current.previewUrl) {
+				return current
+			}
+			return image
+		})
 		const imageUrl = image.type === 'url' ? image.url : image.previewUrl
 		setFormData({ ...formData, image: imageUrl })
 	}
