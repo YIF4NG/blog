@@ -449,6 +449,7 @@ export default function BlogPage() {
 						</motion.div>
 					)
 				})}
+				{/*
 				{items.length > 0 && (
 					<div className='text-center'>
 						<motion.a
@@ -464,6 +465,7 @@ export default function BlogPage() {
 						</motion.a>
 					</div>
 				)}
+				*/}
 			</div>
 
 			<div className='pt-12'>
