@@ -62,9 +62,16 @@
 			"value": "yif4ng718@gmail.com",
 			"label": "",
 			"order": 1
+		},
+		{
+			"id": "button-1788138798695",
+			"type": "bilibili",
+			"value": "https://space.bilibili.com/186558427",
+			"label": "一方OoO",
+			"order": 4
 		}
 	],
-	"clockShowSeconds": false,
+	"clockShowSeconds": true,
 	"summaryInContent": false,
 	"isCachePem": false,
 	"hideEditButton": false,
