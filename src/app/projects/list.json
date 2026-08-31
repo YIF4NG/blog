@@ -2,7 +2,7 @@
 	{
 		"name": "QQ音乐批量下载器",
 		"year": 2026,
-		"image": "blob:https://yif4ng.org/0649f99a-7ed6-453a-adf9-851959dbb8a2",
+		"image": "/images/project/9810e9440530d8e9.png",
 		"url": "https://github.com/YIF4NG/qmdler/releases/tag/1",
 		"description": "一个全异步的 QQ 音乐歌单批量下载器",
 		"tags": [
