@@ -37,8 +37,8 @@
 		"height": 66,
 		"offset": 120,
 		"order": 6,
-		"offsetX": 51,
-		"offsetY": 266,
+		"offsetX": 88,
+		"offsetY": 262,
 		"enabled": true
 	},
 	"socialButtons": {
@@ -53,7 +53,7 @@
 		"width": 200,
 		"height": 180,
 		"order": 7,
-		"offsetX": -178,
+		"offsetX": -141,
 		"offsetY": 262,
 		"enabled": true
 	},
@@ -61,8 +61,8 @@
 		"width": 266,
 		"height": 160,
 		"order": 8,
-		"offsetX": -536,
-		"offsetY": 155,
+		"offsetX": -423,
+		"offsetY": 241,
 		"enabled": true
 	},
 	"writeButtons": {
@@ -85,8 +85,8 @@
 		"width": 54,
 		"height": 54,
 		"order": 8,
-		"offsetX": 65,
-		"offsetY": 375,
+		"offsetX": 90,
+		"offsetY": 373,
 		"enabled": true
 	},
 	"hatCard": {
