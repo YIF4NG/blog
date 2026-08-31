@@ -15,6 +15,16 @@ export type PushProjectsParams = {
 export async function pushProjects(params: PushProjectsParams): Promise<Project[]> {
 	const { projects, imageItems } = params
 
+	const pendingFileUrls = new Set<string>()
+	imageItems?.forEach((imageItem, previewUrl) => {
+		if (imageItem.type === 'file') pendingFileUrls.add(previewUrl)
+	})
+
+	const unmatchedBlobProject = projects.find(project => project.image.startsWith('blob:') && !pendingFileUrls.has(project.image))
+	if (unmatchedBlobProject) {
+		throw new Error(`项目“${unmatchedBlobProject.name}”的图片尚未上传，请重新选择图片`)
+	}
+
 	const token = await getAuthToken()
 
 	toast.info('正在获取分支信息...')
@@ -58,9 +68,9 @@ export async function pushProjects(params: PushProjectsParams): Promise<Project[
 		}
 	}
 
-	const unresolvedProject = updatedProjects.find(project => project.image.startsWith('blob:'))
-	if (unresolvedProject) {
-		throw new Error(`项目“${unresolvedProject.name}”的图片尚未上传，请重新选择图片`)
+	const remainingBlobProject = updatedProjects.find(project => project.image.startsWith('blob:'))
+	if (remainingBlobProject) {
+		throw new Error(`项目“${remainingBlobProject.name}”的图片上传未完成，请重新选择图片`)
 	}
 
 	const projectsJson = JSON.stringify(updatedProjects, null, '\t')
