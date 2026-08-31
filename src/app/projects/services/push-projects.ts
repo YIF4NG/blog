@@ -12,8 +12,18 @@ export type PushProjectsParams = {
 	imageItems?: Map<string, ImageItem>
 }
 
-export async function pushProjects(params: PushProjectsParams): Promise<void> {
+export async function pushProjects(params: PushProjectsParams): Promise<Project[]> {
 	const { projects, imageItems } = params
+
+	const pendingFileUrls = new Set<string>()
+	imageItems?.forEach((imageItem, previewUrl) => {
+		if (imageItem.type === 'file') pendingFileUrls.add(previewUrl)
+	})
+
+	const unmatchedBlobProject = projects.find(project => project.image.startsWith('blob:') && !pendingFileUrls.has(project.image))
+	if (unmatchedBlobProject) {
+		throw new Error(`项目“${unmatchedBlobProject.name}”的图片尚未上传，请重新选择图片`)
+	}
 
 	const token = await getAuthToken()
 
@@ -31,8 +41,10 @@ export async function pushProjects(params: PushProjectsParams): Promise<void> {
 
 	if (imageItems && imageItems.size > 0) {
 		toast.info('正在上传图片...')
-		for (const [url, imageItem] of imageItems.entries()) {
+		for (const [previewUrl, imageItem] of imageItems.entries()) {
 			if (imageItem.type === 'file') {
+				if (!updatedProjects.some(project => project.image === previewUrl)) continue
+
 				const hash = imageItem.hash || (await hashFileSHA256(imageItem.file))
 				const ext = getFileExt(imageItem.file.name)
 				const filename = `${hash}${ext}`
@@ -51,9 +63,14 @@ export async function pushProjects(params: PushProjectsParams): Promise<void> {
 					uploadedHashes.add(hash)
 				}
 
-				updatedProjects = updatedProjects.map(p => (p.url === url ? { ...p, image: publicPath } : p))
+				updatedProjects = updatedProjects.map(p => (p.image === previewUrl ? { ...p, image: publicPath } : p))
 			}
 		}
+	}
+
+	const remainingBlobProject = updatedProjects.find(project => project.image.startsWith('blob:'))
+	if (remainingBlobProject) {
+		throw new Error(`项目“${remainingBlobProject.name}”的图片上传未完成，请重新选择图片`)
 	}
 
 	const projectsJson = JSON.stringify(updatedProjects, null, '\t')
@@ -75,5 +92,6 @@ export async function pushProjects(params: PushProjectsParams): Promise<void> {
 	await updateRef(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, `heads/${GITHUB_CONFIG.BRANCH}`, commitData.sha)
 
 	toast.success('发布成功！')
+	return updatedProjects
 }
 

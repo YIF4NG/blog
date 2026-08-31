@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -30,16 +30,18 @@ export function ProjectCard({ project, isEditMode = false, onUpdate, onDelete }:
 	const { maxSM } = useSize()
 	const [localProject, setLocalProject] = useState(project)
 	const [showImageDialog, setShowImageDialog] = useState(false)
-	const [imageItem, setImageItem] = useState<ImageItem | null>(null)
+
+	useEffect(() => {
+		setLocalProject(project)
+	}, [project])
 
 	const handleFieldChange = (field: keyof Project, value: any) => {
 		const updated = { ...localProject, [field]: value }
 		setLocalProject(updated)
-		onUpdate?.(updated, project, imageItem || undefined)
+		onUpdate?.(updated, project)
 	}
 
 	const handleImageSubmit = (image: ImageItem) => {
-		setImageItem(image)
 		const imageUrl = image.type === 'url' ? image.url : image.previewUrl
 		const updated = { ...localProject, image: imageUrl }
 		setLocalProject(updated)
@@ -57,7 +59,6 @@ export function ProjectCard({ project, isEditMode = false, onUpdate, onDelete }:
 	const handleCancel = () => {
 		setLocalProject(project)
 		setIsEditing(false)
-		setImageItem(null)
 	}
 
 	const canEdit = isEditMode && isEditing

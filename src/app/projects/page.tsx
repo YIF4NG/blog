@@ -27,11 +27,11 @@ export default function Page() {
 
 	const handleUpdate = (updatedProject: Project, oldProject: Project, imageItem?: ImageItem) => {
 		setProjects(prev => prev.map(p => (p.url === oldProject.url ? updatedProject : p)))
-		if (imageItem) {
+		if (imageItem?.type === 'file') {
 			setImageItems(prev => {
-				const newMap = new Map(prev)
-				newMap.set(updatedProject.url, imageItem)
-				return newMap
+				const next = new Map(prev)
+				next.set(imageItem.previewUrl, imageItem)
+				return next
 			})
 		}
 	}
@@ -41,12 +41,20 @@ export default function Page() {
 		setIsCreateDialogOpen(true)
 	}
 
-	const handleSaveProject = (updatedProject: Project) => {
-		if (editingProject) {
-			const updated = projects.map(p => (p.url === editingProject.url ? updatedProject : p))
-			setProjects(updated)
-		} else {
-			setProjects([...projects, updatedProject])
+	const handleSaveProject = (updatedProject: Project, imageItem?: ImageItem) => {
+		setProjects(prev => {
+			if (editingProject) {
+				return prev.map(p => (p.url === editingProject.url ? updatedProject : p))
+			}
+			return [...prev, updatedProject]
+		})
+
+		if (imageItem?.type === 'file') {
+			setImageItems(prev => {
+				const next = new Map(prev)
+				next.set(imageItem.previewUrl, imageItem)
+				return next
+			})
 		}
 	}
 
@@ -79,12 +87,13 @@ export default function Page() {
 		setIsSaving(true)
 
 		try {
-			await pushProjects({
+			const savedProjects = await pushProjects({
 				projects,
 				imageItems
 			})
 
-			setOriginalProjects(projects)
+			setProjects(savedProjects)
+			setOriginalProjects(savedProjects)
 			setImageItems(new Map())
 			setIsEditMode(false)
 			toast.success('保存成功！')
