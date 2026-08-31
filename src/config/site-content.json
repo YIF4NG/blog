@@ -43,13 +43,6 @@
 	"currentBackgroundImageId": "",
 	"socialButtons": [
 		{
-			"id": "github",
-			"type": "x",
-			"value": "https://x.com/wu_inari",
-			"label": "wu_inari",
-			"order": 3
-		},
-		{
 			"id": "juejin",
 			"type": "tg",
 			"value": "https://t.me/yif4ng",
