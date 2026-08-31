@@ -53,8 +53,8 @@
 		"width": 200,
 		"height": 180,
 		"order": 7,
-		"offsetX": -125,
-		"offsetY": 267,
+		"offsetX": -121,
+		"offsetY": 268,
 		"enabled": true
 	},
 	"articleCard": {
@@ -62,7 +62,7 @@
 		"height": 160,
 		"order": 8,
 		"offsetX": -423,
-		"offsetY": 241,
+		"offsetY": 248,
 		"enabled": true
 	},
 	"writeButtons": {
