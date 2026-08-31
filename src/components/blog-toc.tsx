@@ -65,7 +65,7 @@ export function BlogToc({ toc, delay = 0 }: BlogTocProps) {
 			transition={{ delay }}
 			className='bg-card w-full rounded-xl border p-3 text-sm'>
 			<h2 className='text-secondary mb-2 font-medium'>目录</h2>
-			<div className='relative max-h-[300px] space-y-2 overflow-auto'>
+			<div className='relative max-h-[60vh] space-y-2 overflow-auto'>
 				{toc.length === 0 && <div className='text-secondary'>暂无</div>}
 				{toc.map(item => (
 					<a
