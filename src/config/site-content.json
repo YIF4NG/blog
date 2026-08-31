@@ -62,6 +62,13 @@
 			"value": "https://space.bilibili.com/186558427",
 			"label": "一方OoO",
 			"order": 4
+		},
+		{
+			"id": "button-1788176761778",
+			"type": "x",
+			"value": "https://x.com/wu_inari",
+			"label": "wu_inari",
+			"order": 4
 		}
 	],
 	"clockShowSeconds": true,
