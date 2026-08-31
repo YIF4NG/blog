@@ -14,10 +14,11 @@
 		"name": "HoKit",
 		"year": 2026,
 		"image": "blob:https://yif4ng.org/7ed9c152-e64b-41af-850c-b312ab6c43a3",
-		"url": "https://github.com/yabi-zzh/HoKit",
+		"url": "https://gitcode.com/yabi-zzh/Ho-Kit/releases",
 		"description": "一站式 HarmonyOS NEXT 应用开发辅助工具：低延迟投屏、实时性能监控、一键重签名、文件管理等\n\n",
 		"tags": [
 			"鸿蒙"
-		]
+		],
+		"github": "https://github.com/yabi-zzh/HoKit"
 	}
 ]
