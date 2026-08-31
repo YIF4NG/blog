@@ -42,7 +42,7 @@ export function ProjectCard({ project, isEditMode = false, onUpdate, onDelete }:
 	}
 
 	const handleImageSubmit = (image: ImageItem) => {
-			const imageUrl = image.type === 'url' ? image.url : image.previewUrl
+		const imageUrl = image.type === 'url' ? image.url : image.previewUrl
 		const updated = { ...localProject, image: imageUrl }
 		setLocalProject(updated)
 		onUpdate?.(updated, project, image)
