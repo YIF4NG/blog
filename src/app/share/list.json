@@ -63,16 +63,6 @@
 		"stars": 3
 	},
 	{
-		"name": "CSS Buttons",
-		"url": "https://cssbuttons.io/",
-		"logo": "/images/share/2b8118a3645967ee.svg",
-		"description": "有不少按钮样式。跟 Neumorphism 有一些关系。",
-		"tags": [
-			"CSS"
-		],
-		"stars": 2
-	},
-	{
 		"name": "Uiverse",
 		"url": "https://uiverse.io/",
 		"logo": "/images/share/5e7b29cb1a84be80.png",
@@ -100,16 +90,6 @@
 		"description": "类 Magic UI，但是感觉差点意思。可作为看完 Magic 意犹未尽时闲看。",
 		"tags": [
 			"组件"
-		],
-		"stars": 3
-	},
-	{
-		"name": "Awwwards",
-		"url": "https://www.awwwards.com/",
-		"logo": "https://assets.awwwards.com/assets/images/favicon.svg",
-		"description": "网站评选网站，你总能从这里发现惊艳的网站",
-		"tags": [
-			"网站集"
 		],
 		"stars": 3
 	},
