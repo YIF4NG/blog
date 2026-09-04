@@ -262,5 +262,15 @@
 			"AI"
 		],
 		"stars": 4
+	},
+	{
+		"name": "MusicHub",
+		"logo": "/images/share/83072359df9d08c9.png",
+		"url": "https://agmusic.yunrain.cn/",
+		"description": "聚合网易云音乐与 QQ 音乐，支持榜单浏览、音乐搜索、在线播放、歌词展示和歌单管理。",
+		"tags": [
+			"音乐"
+		],
+		"stars": 3
 	}
 ]
