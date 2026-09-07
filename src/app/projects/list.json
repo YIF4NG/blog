@@ -20,5 +20,15 @@
 			"鸿蒙"
 		],
 		"github": "https://github.com/yabi-zzh/HoKit"
+	},
+	{
+		"name": "YT下载助手",
+		"year": 2026,
+		"image": "/images/project/4d5f59ef4444c2e9.png",
+		"url": "https://github.com/YIF4NG/ytdl-mate",
+		"description": "一个面向 Windows 用户的中文 yt-dlp 图形界面。粘贴链接、选择画质和保存位置，即可下载视频或提取音频，无需手写命令。",
+		"tags": [
+			"下载器"
+		]
 	}
 ]
