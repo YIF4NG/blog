@@ -30,5 +30,16 @@
 		"tags": [
 			"下载器"
 		]
+	},
+	{
+		"name": "OCS",
+		"year": 2026,
+		"image": "/images/project/232ac84d38cf4e21.png",
+		"url": "https://docs.ocsjs.com/",
+		"description": "OCS (Online Course Script) 网课刷课脚本，帮助大学生解决网课难题\n\n",
+		"tags": [
+			"网课助手"
+		],
+		"github": "https://github.com/ocsjs/ocsjs"
 	}
 ]
