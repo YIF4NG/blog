@@ -55,7 +55,7 @@ export function MetaSection({ delay = 0 }: MetaSectionProps) {
 						className='h-4 w-4 rounded border-gray-300'
 					/>
 					<label htmlFor='hidden-check' className='cursor-pointer text-sm text-gray-600 select-none'>
-						隐藏此文章（仅管理员可见）
+						从文章列表、RSS 和站点地图隐藏（链接和仓库仍公开）
 					</label>
 				</div>
 			</div>

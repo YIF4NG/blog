@@ -1,8 +1,8 @@
 import { toast } from 'sonner'
 import { GITHUB_CONFIG } from '@/consts'
 import { getAuthToken } from '@/lib/auth'
-import { createBlob, createCommit, createTree, getRef, listRepoFilesRecursive, toBase64Utf8, type TreeItem, updateRef } from '@/lib/github-client'
-import type { BlogIndexItem } from '@/lib/blog-index'
+import { createBlob, createCommit, createTree, getRef, listRepoFilesRecursive, toBase64Utf8, type TreeItem, updateRef, readTextFileFromRepo } from '@/lib/github-client'
+import { readBlogsIndex, type BlogIndexItem } from '@/lib/blog-index'
 
 export async function saveBlogEdits(originalItems: BlogIndexItem[], nextItems: BlogIndexItem[], categories: string[]): Promise<void> {
 	const removedSlugs = originalItems.filter(item => !nextItems.some(next => next.slug === item.slug)).map(item => item.slug)
@@ -14,12 +14,31 @@ export async function saveBlogEdits(originalItems: BlogIndexItem[], nextItems: B
 	const refData = await getRef(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, `heads/${GITHUB_CONFIG.BRANCH}`)
 	const latestCommitSha = refData.sha
 
+	// Compare with the exact snapshot used as the commit parent.
+	const latestItems = await readBlogsIndex(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, latestCommitSha)
+	const snapshot = (items: BlogIndexItem[]) => JSON.stringify([...items].sort((a, b) => a.slug.localeCompare(b.slug)))
+	if (snapshot(latestItems) !== snapshot(originalItems)) {
+		throw new Error('文章列表已更新，请刷新页面后重新编辑')
+	}
+
 	const treeItems: TreeItem[] = []
+	for (const item of nextItems) {
+		const original = latestItems.find(entry => entry.slug === item.slug)
+		if (!original) throw new Error('文章列表不一致，请刷新页面后重新编辑')
+		if ((original.category || '') === (item.category || '')) continue
+		const path = `public/blogs/${item.slug}/config.json`
+		const text = await readTextFileFromRepo(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, path, latestCommitSha)
+		if (text === null) throw new Error(`文章配置不存在：${item.slug}`)
+		const config = JSON.parse(text)
+		if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error(`文章配置格式错误：${item.slug}`)
+		config.category = item.category || ''
+		treeItems.push({ path, mode: '100644', type: 'blob', content: JSON.stringify(config, null, 2) })
+	}
 
 	for (const slug of uniqueRemoved) {
 		toast.info(`正在收集 ${slug} 文件...`)
 		const basePath = `public/blogs/${slug}`
-		const files = await listRepoFilesRecursive(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, basePath, GITHUB_CONFIG.BRANCH)
+		const files = await listRepoFilesRecursive(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, basePath, latestCommitSha)
 
 		for (const path of files) {
 			treeItems.push({

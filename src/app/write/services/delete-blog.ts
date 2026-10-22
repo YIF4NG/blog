@@ -16,7 +16,7 @@ export async function deleteBlog(slug: string): Promise<void> {
 	const basePath = `public/blogs/${slug}`
 
 	toast.info('正在收集文章文件...')
-	const files = await listRepoFilesRecursive(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, basePath, GITHUB_CONFIG.BRANCH)
+	const files = await listRepoFilesRecursive(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, basePath, latestCommitSha)
 	if (files.length === 0) {
 		throw new Error('文章不存在或已删除')
 	}
@@ -29,7 +29,7 @@ export async function deleteBlog(slug: string): Promise<void> {
 	}))
 
 	toast.info('正在更新索引...')
-	const indexJson = await removeBlogFromIndex(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, slug, GITHUB_CONFIG.BRANCH)
+	const indexJson = await removeBlogFromIndex(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, slug, latestCommitSha)
 	const indexBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(indexJson), 'base64')
 	treeItems.push({
 		path: 'public/blogs/index.json',

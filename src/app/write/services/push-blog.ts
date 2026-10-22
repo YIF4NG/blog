@@ -1,4 +1,4 @@
-import { toBase64Utf8, getRef, createTree, createCommit, updateRef, createBlob, type TreeItem } from '@/lib/github-client'
+import { toBase64Utf8, getFileSha, getRef, createTree, createCommit, updateRef, createBlob, type TreeItem } from '@/lib/github-client'
 import { fileToBase64NoPrefix, hashFileSHA256 } from '@/lib/file-utils'
 import { prepareBlogsIndex } from '@/lib/blog-index'
 import { getAuthToken } from '@/lib/auth'
@@ -42,6 +42,9 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 	const latestCommitSha = refData.sha
 
 	const basePath = `public/blogs/${form.slug}`
+	if (mode === 'create' && await getFileSha(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, basePath, latestCommitSha)) {
+		throw new Error('该 slug 已存在，请更换 slug 或编辑已有文章')
+	}
 	const commitMessage = mode === 'edit' ? `更新文章: ${form.slug}` : `新增文章: ${form.slug}`
 
 	// collect all local images (content + cover)
@@ -153,7 +156,7 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 			hidden: form.hidden,
 			category: form.category
 		},
-		GITHUB_CONFIG.BRANCH
+		latestCommitSha
 	)
 	const indexBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(indexJson), 'base64')
 	treeItems.push({
