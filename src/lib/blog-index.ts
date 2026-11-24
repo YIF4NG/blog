@@ -26,8 +26,7 @@ export async function upsertBlogsIndex(token: string, owner: string, repo: strin
 	await putFile(token, owner, repo, indexPath, base64, 'Update blogs index', branch)
 }
 
-export async function prepareBlogsIndex(token: string, owner: string, repo: string, item: BlogIndexItem, branch: string): Promise<string> {
-	const list = await readBlogsIndex(token, owner, repo, branch)
+export function prepareBlogsIndex(list: BlogIndexItem[], item: BlogIndexItem): string {
 	const map = new Map<string, BlogIndexItem>(list.map(i => [i.slug, i]))
 	map.set(item.slug, item)
 	const next = Array.from(map.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''))

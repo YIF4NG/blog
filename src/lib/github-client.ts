@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 export const GH_API = 'https://api.github.com'
 
 function handle401Error(): void {
-	if (typeof sessionStorage === 'undefined') return
 	try {
 		useAuthStore.getState().clearAuth()
 	} catch (error) {
@@ -31,14 +30,16 @@ export function signAppJwt(appId: string, privateKeyPem: string): string {
 	return KJUR.jws.JWS.sign('RS256', JSON.stringify(header), JSON.stringify(payload), prv)
 }
 
-export async function getInstallationId(jwt: string, owner: string, repo: string): Promise<number> {
+export async function getInstallationId(jwt: string, owner: string, repo: string, signal?: AbortSignal): Promise<number> {
 	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/installation`, {
+		signal,
 		headers: {
 			Authorization: `Bearer ${jwt}`,
 			Accept: 'application/vnd.github+json',
 			'X-GitHub-Api-Version': '2022-11-28'
 		}
 	})
+	signal?.throwIfAborted()
 	if (res.status === 401) handle401Error()
 	if (res.status === 422) handle422Error()
 	if (!res.ok) throw new Error(`installation lookup failed: ${res.status}`)
@@ -46,15 +47,17 @@ export async function getInstallationId(jwt: string, owner: string, repo: string
 	return data.id
 }
 
-export async function createInstallationToken(jwt: string, installationId: number): Promise<string> {
+export async function createInstallationToken(jwt: string, installationId: number, signal?: AbortSignal): Promise<string> {
 	const res = await fetch(`${GH_API}/app/installations/${installationId}/access_tokens`, {
 		method: 'POST',
+		signal,
 		headers: {
 			Authorization: `Bearer ${jwt}`,
 			Accept: 'application/vnd.github+json',
 			'X-GitHub-Api-Version': '2022-11-28'
 		}
 	})
+	signal?.throwIfAborted()
 	if (res.status === 401) handle401Error()
 	if (res.status === 422) handle422Error()
 	if (!res.ok) throw new Error(`create token failed: ${res.status}`)
@@ -62,20 +65,25 @@ export async function createInstallationToken(jwt: string, installationId: numbe
 	return data.token as string
 }
 
-export async function getFileSha(token: string, owner: string, repo: string, path: string, branch: string): Promise<string | undefined> {
-	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, {
+export async function getRepoPathInfo(token: string, owner: string, repo: string, path: string, ref: string): Promise<{ type: string; sha?: string } | null> {
+	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(ref)}`, {
 		headers: {
 			Authorization: `Bearer ${token}`,
-			Accept: 'application/vnd.github+json',
+			Accept: 'application/vnd.github.object+json',
 			'X-GitHub-Api-Version': '2022-11-28'
 		}
 	})
 	if (res.status === 401) handle401Error()
 	if (res.status === 422) handle422Error()
-	if (res.status === 404) return undefined
-	if (!res.ok) throw new Error(`get file sha failed: ${res.status}`)
+	if (res.status === 404) return null
+	if (!res.ok) throw new Error(`read repository path failed: ${res.status}`)
 	const data = await res.json()
-	return (data && data.sha) || undefined
+	return Array.isArray(data) ? { type: 'dir' } : { type: data.type, sha: data.sha }
+}
+
+export async function getFileSha(token: string, owner: string, repo: string, path: string, branch: string): Promise<string | undefined> {
+	const entry = await getRepoPathInfo(token, owner, repo, path, branch)
+	return entry?.type === 'dir' ? undefined : entry?.sha
 }
 
 export async function putFile(token: string, owner: string, repo: string, path: string, contentBase64: string, message: string, branch: string) {
@@ -100,6 +108,7 @@ export async function putFile(token: string, owner: string, repo: string, path: 
 
 export async function getRef(token: string, owner: string, repo: string, ref: string): Promise<{ sha: string }> {
 	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/ref/${encodeURIComponent(ref)}`, {
+		cache: 'no-store',
 		headers: {
 			Authorization: `Bearer ${token}`,
 			Accept: 'application/vnd.github+json',

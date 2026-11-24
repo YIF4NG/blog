@@ -7,7 +7,7 @@ import { useWriteStore } from '../stores/write-store'
 import { useAuthStore } from '@/hooks/use-auth'
 
 export function usePublish() {
-	const { loading, setLoading, form, cover, images, mode, originalSlug } = useWriteStore()
+	const loading = useWriteStore(state => state.loading)
 	const { isAuth, setPrivateKey } = useAuthStore()
 
 	const onChoosePrivateKey = useCallback(
@@ -19,15 +19,21 @@ export function usePublish() {
 	)
 
 	const onPublish = useCallback(async () => {
+		const { loading, setLoading, form, cover, images, mode, originalSlug, editVersion } = useWriteStore.getState()
+		if (loading) return
 		try {
 			setLoading(true)
-			await pushBlog({
+			const publishedVersion = await pushBlog({
 				form,
 				cover,
 				images,
 				mode,
-				originalSlug
+				originalSlug,
+				editVersion
 			})
+			if (mode === 'edit') {
+				useWriteStore.setState(state => (state.editVersion === editVersion ? { editVersion: publishedVersion } : state))
+			}
 
 			const successMsg = mode === 'edit' ? '更新成功' : '发布成功'
 			toast.success(successMsg)
@@ -37,9 +43,11 @@ export function usePublish() {
 		} finally {
 			setLoading(false)
 		}
-	}, [form, cover, images, mode, originalSlug, setLoading])
+	}, [])
 
 	const onDelete = useCallback(async () => {
+		const { loading, setLoading, form, originalSlug } = useWriteStore.getState()
+		if (loading) return
 		const targetSlug = originalSlug || form.slug
 		if (!targetSlug) {
 			toast.error('缺少 slug，无法删除')
@@ -54,7 +62,7 @@ export function usePublish() {
 		} finally {
 			setLoading(false)
 		}
-	}, [form.slug, originalSlug, setLoading])
+	}, [])
 
 	return {
 		isAuth,
