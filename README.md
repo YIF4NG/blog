@@ -33,6 +33,12 @@ export const GITHUB_CONFIG = {
 
 到这里部署网站已经完成了，下一步创建 Github App
 
+### RSS 和站点地图域名
+
+`/rss.xml` 和 `/sitemap.xml` 共用站点域名。可将 `SITE_URL` 设置为正式站点地址（例如 `https://blog.example.com`）。两项都设置时，`SITE_URL` 优先于原有的 `NEXT_PUBLIC_SITE_URL`。未配置有效地址时，生产、预览和本地访问各自使用当前请求的协议和域名。
+
+在 Cloudflare Workers 的 **Settings → Build → Build variables and secrets** 或 Vercel 的项目环境变量中设置，然后重新部署。
+
 ## 3. 创建 Github App 链接仓库
 
 在 github 个人设置里面，找到最下面的 Developer Settings ，点击进入

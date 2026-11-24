@@ -15,16 +15,20 @@ export default function EditBlogPage() {
 
 	const { form, cover } = useWriteStore()
 	const { isPreview, closePreview } = usePreviewStore()
-	const { loading } = useLoadBlog(slug)
+	const { loading, error } = useLoadBlog(slug)
 
 	const coverPreviewUrl = cover ? (cover.type === 'url' ? cover.url : cover.previewUrl) : null
 
-	if (loading) {
-		return <div className='text-secondary flex h-screen items-center justify-center text-sm'>加载中...</div>
-	}
-
 	if (!slug) {
 		return <div className='flex h-screen items-center justify-center text-sm text-red-500'>无效的博客 ID</div>
+	}
+
+	if (error) {
+		return <div className='flex h-screen items-center justify-center text-sm text-red-500'>{error}</div>
+	}
+
+	if (loading) {
+		return <div className='text-secondary flex h-screen items-center justify-center text-sm'>加载中...</div>
 	}
 
 	return isPreview ? (

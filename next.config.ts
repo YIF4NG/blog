@@ -1,7 +1,34 @@
+import { statSync } from 'node:fs'
+import path from 'node:path'
+
 import { NextConfig } from 'next'
 import { codeInspectorPlugin } from 'code-inspector-plugin'
+import blogIndex from './public/blogs/index.json'
+
+const publicDirectory = path.resolve('public')
+const rssCoverLengths: Record<string, number> = {}
+
+// Cloudflare serves public files as assets, so record cover sizes at build time.
+for (const { cover, hidden } of blogIndex) {
+	if (hidden || !cover?.startsWith('/') || cover.startsWith('//')) continue
+
+	const coverPath = path.resolve(publicDirectory, `.${cover}`)
+	if (!coverPath.startsWith(`${publicDirectory}${path.sep}`)) continue
+
+	try {
+		const stat = statSync(coverPath)
+		if (stat.isFile()) rssCoverLengths[cover] = stat.size
+	} catch {
+		// Skip enclosures whose cover files are unavailable.
+	}
+}
 
 const nextConfig: NextConfig = {
+	env: {
+		SITE_URL: process.env.SITE_URL,
+		SITE_BUILD_DATE: new Date().toISOString(),
+		RSS_COVER_LENGTHS: JSON.stringify(rssCoverLengths)
+	},
 	devIndicators: false,
 	reactStrictMode: false,
 	reactCompiler: true,

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { toast } from 'sonner'
 import { hashFileSHA256 } from '@/lib/file-utils'
-import { loadBlog } from '@/lib/load-blog'
+import { loadBlog, type BlogVersion } from '@/lib/load-blog'
 import type { PublishForm, ImageItem } from '../types'
 
 export const formatDateTimeLocal = (date: Date = new Date()): string => {
@@ -18,6 +18,7 @@ type WriteStore = {
 	// Mode state
 	mode: 'create' | 'edit'
 	originalSlug: string | null
+	editVersion: BlogVersion | null
 	setMode: (mode: 'create' | 'edit', originalSlug?: string) => void
 
 	// Form state
@@ -40,7 +41,7 @@ type WriteStore = {
 	setLoading: (loading: boolean) => void
 
 	// Load blog for editing
-	loadBlogForEdit: (slug: string) => Promise<void>
+	loadBlogForEdit: (slug: string, signal: AbortSignal) => Promise<void>
 
 	// Reset to create mode
 	reset: () => void
@@ -61,7 +62,8 @@ export const useWriteStore = create<WriteStore>((set, get) => ({
 	// Mode state
 	mode: 'create',
 	originalSlug: null,
-	setMode: (mode, originalSlug) => set({ mode, originalSlug: originalSlug || null }),
+	editVersion: null,
+	setMode: (mode, originalSlug) => set({ mode, originalSlug: originalSlug || null, editVersion: null }),
 
 	// Form state
 	form: { ...initialForm },
@@ -155,60 +157,50 @@ export const useWriteStore = create<WriteStore>((set, get) => ({
 	setLoading: loading => set({ loading }),
 
 	// Load blog for editing
-	loadBlogForEdit: async (slug: string) => {
-		try {
-			set({ loading: true })
-			const blog = await loadBlog(slug)
+	loadBlogForEdit: async (slug: string, signal: AbortSignal) => {
+		set({ mode: 'edit', originalSlug: slug, editVersion: null })
+		const blog = await loadBlog(slug, { forEdit: true, signal })
+		if (signal.aborted) return
 
-			// Parse images from markdown
-			const images: ImageItem[] = []
-			const imageRegex = /!\[.*?\]\((.*?)\)/g
-			let match
-			while ((match = imageRegex.exec(blog.markdown)) !== null) {
-				const url = match[1]
-				// Skip cover image and only collect content images
-				if (url && url !== blog.cover && !url.startsWith('local-image:')) {
-					// Check if already added
-					if (!images.some(img => img.type === 'url' && img.url === url)) {
-						const id = Math.random().toString(36).slice(2, 10)
-						images.push({ id, type: 'url', url })
-					}
+		// Parse images from markdown
+		const images: ImageItem[] = []
+		const imageRegex = /!\[.*?\]\((.*?)\)/g
+		let match
+		while ((match = imageRegex.exec(blog.markdown)) !== null) {
+			const url = match[1]
+			// Skip cover image and only collect content images
+			if (url && url !== blog.cover && !url.startsWith('local-image:')) {
+				// Check if already added
+				if (!images.some(img => img.type === 'url' && img.url === url)) {
+					const id = Math.random().toString(36).slice(2, 10)
+					images.push({ id, type: 'url', url })
 				}
 			}
-
-			// Set cover
-			let cover: ImageItem | null = null
-			if (blog.cover) {
-				const coverId = Math.random().toString(36).slice(2, 10)
-				cover = { id: coverId, type: 'url', url: blog.cover }
-			}
-
-			// Set form
-			set({
-				mode: 'edit',
-				originalSlug: slug,
-				form: {
-					slug,
-					title: blog.config.title || '',
-					md: blog.markdown,
-					tags: blog.config.tags || [],
-					date: blog.config.date ? formatDateTimeLocal(new Date(blog.config.date)) : formatDateTimeLocal(),
-					summary: blog.config.summary || '',
-					hidden: blog.config.hidden || false,
-					category: blog.config.category || ''
-				},
-				images,
-				cover,
-				loading: false
-			})
-
-			toast.success('博客加载成功')
-		} catch (err: any) {
-			console.error('Failed to load blog:', err)
-			toast.error(err?.message || '加载博客失败')
-			set({ loading: false })
-			throw err
 		}
+
+		// Set cover
+		let cover: ImageItem | null = null
+		if (blog.cover) {
+			const coverId = Math.random().toString(36).slice(2, 10)
+			cover = { id: coverId, type: 'url', url: blog.cover }
+		}
+
+		set({
+			editVersion: blog.version,
+			form: {
+				slug,
+				title: blog.config.title || '',
+				md: blog.markdown,
+				tags: blog.config.tags || [],
+				date: blog.config.date ? formatDateTimeLocal(new Date(blog.config.date)) : formatDateTimeLocal(),
+				summary: blog.config.summary || '',
+				hidden: blog.config.hidden || false,
+				category: blog.config.category || ''
+			},
+			images,
+			cover
+		})
+		toast.success('博客加载成功')
 	},
 
 	// Reset to create mode
@@ -227,6 +219,7 @@ export const useWriteStore = create<WriteStore>((set, get) => ({
 		set({
 			mode: 'create',
 			originalSlug: null,
+			editVersion: null,
 			form: { ...initialForm, date: formatDateTimeLocal() },
 			images: [],
 			cover: null

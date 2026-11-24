@@ -1,7 +1,8 @@
-import { toBase64Utf8, getFileSha, getRef, createTree, createCommit, updateRef, createBlob, type TreeItem } from '@/lib/github-client'
+import { toBase64Utf8, getRepoPathInfo, getRef, createTree, createCommit, updateRef, createBlob, type TreeItem } from '@/lib/github-client'
 import { fileToBase64NoPrefix, hashFileSHA256 } from '@/lib/file-utils'
-import { prepareBlogsIndex } from '@/lib/blog-index'
+import { prepareBlogsIndex, readBlogsIndex } from '@/lib/blog-index'
 import { getAuthToken } from '@/lib/auth'
+import type { BlogVersion } from '@/lib/load-blog'
 import { GITHUB_CONFIG } from '@/consts'
 import type { ImageItem } from '../types'
 import { getFileExt } from '@/lib/utils'
@@ -23,27 +24,48 @@ export type PushBlogParams = {
 	images?: ImageItem[]
 	mode?: 'create' | 'edit'
 	originalSlug?: string | null
+	editVersion?: BlogVersion | null
 }
 
-export async function pushBlog(params: PushBlogParams): Promise<void> {
-	const { form, cover, images, mode = 'create', originalSlug } = params
+export async function pushBlog(params: PushBlogParams): Promise<BlogVersion> {
+	const { form, cover, images, mode = 'create', originalSlug, editVersion } = params
 
 	if (!form?.slug) throw new Error('需要 slug')
 
-	if (mode === 'edit' && originalSlug && originalSlug !== form.slug) {
+	if (mode === 'edit' && originalSlug !== form.slug) {
 		throw new Error('编辑模式下不支持修改 slug，请保持原 slug 不变')
 	}
 
 	// 获取认证 token（自动从全局认证状态获取）
 	const token = await getAuthToken()
+	const { OWNER, REPO, BRANCH } = GITHUB_CONFIG
+	const branchRef = `heads/${BRANCH}`
 
 	toast.info('正在获取分支信息...')
-	const refData = await getRef(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, `heads/${GITHUB_CONFIG.BRANCH}`)
+	const refData = await getRef(token, OWNER, REPO, branchRef)
 	const latestCommitSha = refData.sha
 
 	const basePath = `public/blogs/${form.slug}`
-	if (mode === 'create' && await getFileSha(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, basePath, latestCommitSha)) {
-		throw new Error('该 slug 已存在，请更换 slug 或编辑已有文章')
+	const latestItems = await readBlogsIndex(token, OWNER, REPO, latestCommitSha)
+	if (mode === 'create') {
+		const indexed = latestItems.some(item => item.slug === form.slug)
+		if (indexed || (await getRepoPathInfo(token, OWNER, REPO, basePath, latestCommitSha)) !== null) {
+			throw new Error('该 slug 已存在，请更换 slug 或编辑已有文章')
+		}
+	} else {
+		if (!editVersion) throw new Error('缺少文章版本，请重新打开编辑页面')
+		const [currentMarkdown, currentConfig] = await Promise.all([
+			getRepoPathInfo(token, OWNER, REPO, `${basePath}/index.md`, latestCommitSha),
+			getRepoPathInfo(token, OWNER, REPO, `${basePath}/config.json`, latestCommitSha)
+		])
+		if (
+			currentMarkdown?.type !== 'file' ||
+			currentMarkdown.sha !== editVersion.markdownSha ||
+			(currentConfig !== null && currentConfig.type !== 'file') ||
+			(currentConfig === null ? null : currentConfig.sha) !== editVersion.configSha
+		) {
+			throw new Error('文章已更新或删除，请保留当前稿件，待部署完成后重新打开编辑页面')
+		}
 	}
 	const commitMessage = mode === 'edit' ? `更新文章: ${form.slug}` : `新增文章: ${form.slug}`
 
@@ -84,7 +106,7 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 				const path = `${basePath}/${filename}`
 				const contentBase64 = await fileToBase64NoPrefix(img.file)
 				// create blob for image
-				const blobData = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, contentBase64, 'base64')
+				const blobData = await createBlob(token, OWNER, REPO, contentBase64, 'base64')
 				treeItems.push({
 					path,
 					mode: '100644',
@@ -113,7 +135,7 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 	toast.info('正在创建文件...')
 
 	// create blob for index.md
-	const mdBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(mdToUpload), 'base64')
+	const mdBlob = await createBlob(token, OWNER, REPO, toBase64Utf8(mdToUpload), 'base64')
 	treeItems.push({
 		path: `${basePath}/index.md`,
 		mode: '100644',
@@ -133,7 +155,7 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 		category: form.category
 	}
 
-	const configBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(JSON.stringify(config, null, 2)), 'base64')
+	const configBlob = await createBlob(token, OWNER, REPO, toBase64Utf8(JSON.stringify(config, null, 2)), 'base64')
 	treeItems.push({
 		path: `${basePath}/config.json`,
 		mode: '100644',
@@ -142,23 +164,8 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 	})
 
 	// prepare and create blob for blogs index
-	const indexJson = await prepareBlogsIndex(
-		token,
-		GITHUB_CONFIG.OWNER,
-		GITHUB_CONFIG.REPO,
-		{
-			slug: form.slug,
-			title: form.title,
-			tags: form.tags,
-			date: dateStr,
-			summary: form.summary,
-			cover: coverPath,
-			hidden: form.hidden,
-			category: form.category
-		},
-		latestCommitSha
-	)
-	const indexBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(indexJson), 'base64')
+	const indexJson = prepareBlogsIndex(latestItems, { slug: form.slug, ...config })
+	const indexBlob = await createBlob(token, OWNER, REPO, toBase64Utf8(indexJson), 'base64')
 	treeItems.push({
 		path: 'public/blogs/index.json',
 		mode: '100644',
@@ -168,15 +175,15 @@ export async function pushBlog(params: PushBlogParams): Promise<void> {
 
 	// create tree
 	toast.info('正在创建文件树...')
-	const treeData = await createTree(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, treeItems, latestCommitSha)
+	const treeData = await createTree(token, OWNER, REPO, treeItems, latestCommitSha)
 
 	// create commit
 	toast.info('正在创建提交...')
-	const commitData = await createCommit(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, commitMessage, treeData.sha, [latestCommitSha])
+	const commitData = await createCommit(token, OWNER, REPO, commitMessage, treeData.sha, [latestCommitSha])
 
 	// update branch reference
 	toast.info('正在更新分支...')
-	await updateRef(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, `heads/${GITHUB_CONFIG.BRANCH}`, commitData.sha)
+	await updateRef(token, OWNER, REPO, branchRef, commitData.sha)
 
-	toast.success('发布成功！')
+	return { markdownSha: mdBlob.sha, configSha: configBlob.sha }
 }
